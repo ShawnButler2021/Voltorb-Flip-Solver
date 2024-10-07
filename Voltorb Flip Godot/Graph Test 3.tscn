@@ -8,4 +8,4 @@ script = ExtResource("1_y4qrd")
 [node name="Timer" type="Timer" parent="."]
 
 [node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(465, 240)
+position = Vector2(227, 181)

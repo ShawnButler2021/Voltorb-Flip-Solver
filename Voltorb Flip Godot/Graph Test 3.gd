@@ -42,8 +42,11 @@ func _input(event: InputEvent) -> void:
 			rootNode = find_node(nodeCreationList, 0, 0)
 			#solve_Voltflip(size, rootNode, rootNode)
 			
-			#print(get_row_VoltCount(size))
-			#print(get_column_VoltCount(size))
+			print(get_row_VoltCount(size))
+			print(get_column_VoltCount(size))
+			print(""); 
+			print(get_column_sum(size))
+			print(get_row_sum(size))
 			
 			#connect_nodes(inputNode, null); 
 
@@ -69,16 +72,13 @@ func make_grid(size: int) -> void:
 			b.id = counter; 
 			b.xCord = i; 
 			b.yCord = j; 
-			b.global_position = Vector2(i * 50, j * 50); 
+			b.global_position = Vector2(i * 60, j * 60); 
 			# Create Voltblip value
-			b.update_visual(randi_range(0, 4))
+			b.set_value(randi_range(0, 5))
 		
-			
 			nodeCreationList.append(b)
 			get_parent().add_child(b)
-		#
-
-			
+		#	
 	var copyList = nodeCreationList.duplicate()
 		
 	for i in size:
@@ -100,7 +100,7 @@ func get_column_sum(size: int) -> Array:
 	for i in size: 
 		var sum = 0; 
 		for j in size: 
-			sum = sum + selectedNode.id
+			sum = sum + selectedNode.nodeValue
 			selectedNode = selectedNode.southNode
 			 
 		columnSums.append(sum)
@@ -116,7 +116,7 @@ func get_row_sum(size:int) -> Array:
 	for i in size: 
 		var sum = 0; 
 		for j in size: 
-			sum = sum + selectedNode.id
+			sum = sum + selectedNode.nodeValue
 			selectedNode = selectedNode.eastNode
 			 
 		rowSums.append(sum)
@@ -167,6 +167,7 @@ func get_column_VoltCount(size:int) -> Array:
 		
 	return(columnCount)
 
+#Not being used. 
 func solve_Voltflip(size:int, selectedNode:Node, selectedRow:Node) -> bool:
 	print("SelectedNode: ", selectedNode.xCord, "  ", selectedNode.yCord)
 	print("Info: ", get_row_VoltCount(size)[selectedNode.yCord] , "  ",  rowVoltCount[selectedNode.yCord])
@@ -198,8 +199,7 @@ func solve_Voltflip(size:int, selectedNode:Node, selectedRow:Node) -> bool:
 		return(true)
 	else:
 		return(solve_Voltflip(size, selectedNode, selectedRow))	
-	
-#Not being used. 
+		
 func connect_nodes(inputNode, inputPrevious):
 	var notVisited = inputNode.visited_neighbors(); 
 
