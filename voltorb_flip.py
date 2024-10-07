@@ -1,5 +1,6 @@
 Python 3.11.5 (tags/v3.11.5:cce6ba9, Aug 24 2023, 14:38:34) [MSC v.1936 64 bit (AMD64)] on win32
 Type "help", "copyright", "credits" or "license()" for more information.
+import generate_map.py
 import heapq
 
 class Cell:
@@ -63,4 +64,6 @@ continue  # Ignore closed states
 # Insert the neighbor into the priority queue
 heapq.heappush(open_set, (neighbor.score + heuristic(neighbor), neighbor))
 return None  # No solution found
+
+generate_map() => set_voltorb(map, 0)
 
