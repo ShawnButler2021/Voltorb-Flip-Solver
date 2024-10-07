@@ -1,0 +1,55 @@
+[gd_scene load_steps=7 format=3 uid="uid://cbdkqkppd4owf"]
+
+[ext_resource type="Script" path="res://node.gd" id="1_tu7qa"]
+[ext_resource type="Texture2D" uid="uid://dquig5kdpw172" path="res://token_1.png" id="2_cn8n7"]
+[ext_resource type="Texture2D" uid="uid://cboxd1801hsdj" path="res://undiscoveredTile.png" id="2_iu3ii"]
+[ext_resource type="Texture2D" uid="uid://bubkyhoy72cpq" path="res://token_3.png" id="3_va857"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_yrnvy"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_iu3ii")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_va857")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_cn8n7")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_h6tog"]
+radius = 26.0192
+
+[node name="Node" type="Node2D"]
+script = ExtResource("1_tu7qa")
+
+[node name="Sprite2D" type="AnimatedSprite2D" parent="."]
+scale = Vector2(0.2, 0.2)
+sprite_frames = SubResource("SpriteFrames_yrnvy")
+
+[node name="Label" type="Label" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -0.5
+offset_top = -14.0
+offset_right = 0.5
+offset_bottom = 14.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 20
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("CircleShape2D_h6tog")
+
+[connection signal="input_event" from="Area2D" to="." method="_on_area_2d_input_event"]

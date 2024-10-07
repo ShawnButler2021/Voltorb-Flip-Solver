@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://d2bbrrwxm834m"]
+
+[ext_resource type="Script" path="res://Graph Test 3.gd" id="1_y4qrd"]
+
+[node name="Node2D" type="Node2D"]
+script = ExtResource("1_y4qrd")
+
+[node name="Timer" type="Timer" parent="."]
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(465, 240)
