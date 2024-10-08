@@ -50,11 +50,10 @@ func upgrade_text(inputText:int):
 
 func _on_area_2d_input_event(viewport: Node, event: InputEvent, shape_idx: int) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		
-		
 		if (nodeValue == 0):
 			$Sprite2D.frame = 1;
 		else:
+			$Sprite2D.frame = 2;
 			upgrade_text(nodeValue)
 		
 func update_previous(inputNode):
@@ -74,10 +73,9 @@ func update_visual(spriteValue : int) -> void:
 		spriteValue = 1; 
 	nodeValue = spriteValue
 
-	#upgrade_text(spriteValue)
 	if (nodeValue == 0):
 		$Sprite2D.frame = 1; 
-
+	
 func set_value(inputValue :int) -> void:
 	if (inputValue >= 4):
 		inputValue = 1; 

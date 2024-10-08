@@ -16,6 +16,7 @@ var rowVoltCount = []
 
 
 @onready var nodeSpawn = preload("res://node.tscn")
+@onready var hintSpawn = preload("res://sideHints.tscn")
 
 func test_cases(id = 0) -> void:
 	if (id == 0):
@@ -38,9 +39,12 @@ func _input(event: InputEvent) -> void:
 		if event.keycode == KEY_C:
 			clear_variables()
 			make_grid(size); 
+			
 			var inputNode = find_node(nodeCreationList, 0, 0);
 			rootNode = find_node(nodeCreationList, 0, 0)
 			#solve_Voltflip(size, rootNode, rootNode)
+			
+			make_sideHint(size);
 			
 			print(get_row_VoltCount(size))
 			print(get_column_VoltCount(size))
@@ -75,7 +79,7 @@ func make_grid(size: int) -> void:
 			b.global_position = Vector2(i * 60, j * 60); 
 			# Create Voltblip value
 			b.set_value(randi_range(0, 5))
-		
+			
 			nodeCreationList.append(b)
 			get_parent().add_child(b)
 		#	
@@ -92,6 +96,29 @@ func make_grid(size: int) -> void:
 				b.westNode = find_node(nodeCreationList, b.xCord - 1, b.yCord);	
 			if (b.yCord > 0):
 				b.northNode = find_node(nodeCreationList,b.xCord, b.yCord - 1);	
+
+func make_sideHint(size: int) -> void:
+	
+	var sumColumnnList = get_column_sum(size)
+	var sumRowList = get_row_sum(size)
+	
+	var countColumnList = get_column_VoltCount(size)
+	var countRowList = get_row_VoltCount(size)
+	
+	# Rows Hints
+	for i in size:
+		var b = hintSpawn.instantiate()
+		b.global_position = Vector2((size) * 60,  i * 60); 
+		b.update_info(sumRowList[i], countRowList[i])
+		b.update_visual(i)
+		get_parent().add_child(b)
+		
+	for i in size:
+		var b = hintSpawn.instantiate()
+		b.global_position = Vector2(i * 60,  size * 60); 
+		b.update_visual(i)
+		b.update_info(sumColumnnList[i], countColumnList[i])
+		get_parent().add_child(b)
 
 func get_column_sum(size: int) -> Array:
 	var selectedNode = rootNode; 

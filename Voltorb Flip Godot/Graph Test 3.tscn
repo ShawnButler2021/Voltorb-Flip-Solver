@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://d2bbrrwxm834m"]
+[gd_scene load_steps=3 format=3 uid="uid://d2bbrrwxm834m"]
 
 [ext_resource type="Script" path="res://Graph Test 3.gd" id="1_y4qrd"]
+[ext_resource type="Texture2D" uid="uid://n634pnh8m8kf" path="res://greenbackgorund.png" id="2_h1151"]
 
 [node name="Node2D" type="Node2D"]
 script = ExtResource("1_y4qrd")
@@ -9,3 +10,10 @@ script = ExtResource("1_y4qrd")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(227, 181)
+
+[node name="TextureRect" type="TextureRect" parent="."]
+offset_left = -443.0
+offset_top = -243.0
+offset_right = 1284.0
+offset_bottom = 696.0
+texture = ExtResource("2_h1151")
