@@ -65,5 +65,5 @@ continue  # Ignore closed states
 heapq.heappush(open_set, (neighbor.score + heuristic(neighbor), neighbor))
 return None  # No solution found
 
-generate_map() => set_voltorb(map, 0)
-
+map = generate_map()
+set_voltorbs(map, 0)
