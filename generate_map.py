@@ -110,8 +110,8 @@ def get_labels(env):
 
 
 
-
-map = generate_map()
-set_voltorbs(map, 0)
-for row in map:
-    print(row)
+if __name__ == '__main__':
+    map = generate_map()
+    set_voltorbs(map, 0)
+    for row in map:
+        print(row)
