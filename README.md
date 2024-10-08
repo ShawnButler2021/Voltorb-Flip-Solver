@@ -17,6 +17,6 @@ With Godot, I recreated the Voltorb-Flip game, and we will use this game to test
 
 
 ## Roles
-Maxwell Lam: GoDot Developer
-Daniel Lyons: Algorithm Engineer
-Shawn Butler: Computer Vision Developer
+* Maxwell Lam: GoDot Developer
+* Daniel Lyons: Algorithm Engineer
+* Shawn Butler: Computer Vision Developer
