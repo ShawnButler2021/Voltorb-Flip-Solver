@@ -10,6 +10,7 @@ var tailNode = null;
 var rootNode = null; 
 
 var nodeCreationList = []
+var sideHintCreationList = []
 
 var columnVoltCount = []
 var rowVoltCount = []
@@ -28,7 +29,7 @@ func test_cases(id = 0) -> void:
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	test_cases(0)
+	pass; 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
@@ -59,7 +60,10 @@ func clear_variables():
 	
 	for i in nodeCreationList:
 		i.queue_free()
+	for i in sideHintCreationList:
+		i.queue_free()
 	nodeCreationList = []
+	sideHintCreationList = []
 	rootNode = null; 
 	previousNode = null; 
 
@@ -79,6 +83,9 @@ func make_grid(size: int) -> void:
 			b.global_position = Vector2(i * 60, j * 60); 
 			# Create Voltblip value
 			b.set_value(randi_range(0, 5))
+			
+			if (i == j) and (j == 3):
+				$Camera2D.global_position = b.global_position; 
 			
 			nodeCreationList.append(b)
 			get_parent().add_child(b)
@@ -111,6 +118,7 @@ func make_sideHint(size: int) -> void:
 		b.global_position = Vector2((size) * 60,  i * 60); 
 		b.update_info(sumRowList[i], countRowList[i])
 		b.update_visual(i)
+		sideHintCreationList.append(b)
 		get_parent().add_child(b)
 		
 	for i in size:
@@ -118,8 +126,14 @@ func make_sideHint(size: int) -> void:
 		b.global_position = Vector2(i * 60,  size * 60); 
 		b.update_visual(i)
 		b.update_info(sumColumnnList[i], countColumnList[i])
+		sideHintCreationList.append(b)
 		get_parent().add_child(b)
 
+	var b = hintSpawn.instantiate()
+	b.global_position = Vector2(size * 60,  size * 60);
+	b.update_visual(size)
+	sideHintCreationList.append(b)
+	get_parent().add_child(b) 
 func get_column_sum(size: int) -> Array:
 	var selectedNode = rootNode; 
 	var selectedColumn = rootNode; 
@@ -265,3 +279,15 @@ func connect_nodes(inputNode, inputPrevious):
 			#connect_nodes(inputNode.previousNode, inputNode.previousNode.previousNode); 
 			pass; 
 			
+func _on_timer_timeout() -> void:
+	restart_game()
+
+func restart_game() -> void:
+	clear_variables()
+	make_grid(size); 
+		
+	var inputNode = find_node(nodeCreationList, 0, 0);
+	rootNode = find_node(nodeCreationList, 0, 0)
+	#solve_Voltflip(size, rootNode, rootNode)
+		
+	make_sideHint(size);
