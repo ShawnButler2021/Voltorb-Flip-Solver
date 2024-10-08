@@ -12,7 +12,11 @@ func update_visual(selectedFrame: int) -> void:
 	$AnimatedSprite2D.frame = selectedFrame; 
 
 func update_info(sumInput : int, countInput: int) -> void:
-	$SumDisplay.set_text(str(sumInput)); 
+	var sumInputStr = str(sumInput)
+	if (sumInput < 10) and (sumInput != 0):
+		sumInputStr = "0" + str(sumInput)
+	
+	$SumDisplay.set_text(str(sumInputStr)); 
 	$voltCount.set_text(str(countInput));
 
 
