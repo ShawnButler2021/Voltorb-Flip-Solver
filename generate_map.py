@@ -48,7 +48,7 @@ def set_row(env, count, value):
     # picking where each voltorb goes and
     # marking values at the end of the row
     locations = sample([i for i in range(0, 5)], k=count)
-    env[-1] = [count, value]  # setting up end tile
+    env[-1] = (count, value)  # setting up end tile
     for loc in locations:
         env[loc] = 0
 
@@ -59,12 +59,11 @@ def set_column(env):
         column_score = 0
         voltorb_score = 0
         for y in range(0, 5):
-            if env[y][x] == 0:
+            if env[x][y] == 0:
                 voltorb_score += 1
-            else:
-                column_score += env[x][y]
+            column_score += env[y][x]
 
-        env[5][x] = [voltorb_score, column_score]
+        env[5][x] = (voltorb_score, column_score)
 
 def set_points(env):
     for index, row in enumerate(env[:-1]):
@@ -93,6 +92,8 @@ def set_voltorbs(env, difficulty):
     set_points(env)     # getting & applying point combination
     set_column(env)     # setting last row
 
+    return env
+
 def get_labels(env):
     # getting labels to
     # know how "easy" the
@@ -106,7 +107,14 @@ def get_labels(env):
 
     return ease_value, point_value
 
+def make_work_copy(env):
+    temp = generate_map()
 
+    for y,row in enumerate(env[:-1]):
+        temp[y][-1] = env[y][-1]
+    temp[-1] = env[-1].copy()
+
+    return temp
 
 
 
@@ -114,4 +122,10 @@ if __name__ == '__main__':
     map = generate_map()
     set_voltorbs(map, 0)
     for row in map:
+        print(row)
+
+    print()
+
+    work_map = make_work_copy(map)
+    for row in work_map:
         print(row)
