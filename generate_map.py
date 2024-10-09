@@ -27,6 +27,17 @@ def combinationSum(arr, sum):
     findNumbers(ans,arr,temp,sum,0)
     return ans
 
+def printMap(env, title=''):
+    if title: print(title)
+    for row in env:
+        for item in row:
+            if env[-1] == row:
+                print(item,end='\t')
+            elif row[-1] == item: print(item,end='')
+            else: print(item,end='\t   | ')
+        print()
+    print('\n')
+
 def generate_map():
     x = [-1 for i in range(0,5)]
     x.append(-1)
@@ -59,7 +70,7 @@ def set_column(env):
         column_score = 0
         voltorb_score = 0
         for y in range(0, 5):
-            if env[x][y] == 0:
+            if env[y][x] == 0:
                 voltorb_score += 1
             column_score += env[y][x]
 
