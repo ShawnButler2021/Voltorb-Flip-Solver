@@ -56,11 +56,7 @@ def remove_used_values(combinations,used_values):
 
 
 
-# use combinationSum to get possibilities
-# exclude 0 from list
-# manually add 0 to combinations
-# check columns AND rows
-def is_valid_move(env,coordinate, num):
+def valid_moves(env,coordinate):
     x = coordinate[0]
     y = coordinate[1]
 
@@ -89,17 +85,11 @@ def is_valid_move(env,coordinate, num):
 
 
 
-    if verbose: print(f'{coordinate} choice list:',choice_list)
-    if num in choice_list:
-        #print(f'num possible {coordinate}')
-        return True
-    #print(f'Impossible move, {coordinate}')
-    return False
-
+    return choice_list
 
 def solve(env, row, column):
     if row == len(env)-1:                         # solution found
-        print('solution found')
+        if verbose: print('solution found')
         return True, env
     elif column == 5:                               # end of row
         if verbose: print(f'End of row {row}')
@@ -110,15 +100,17 @@ def solve(env, row, column):
     elif env[row][column] == -1 and column != 5:    # empty tile
         if verbose: print(f'Empty tile ({column},{row})')
 
-        # bread and butter
-        for i in range(0,4):
-            if is_valid_move(env,(column,row), i):
-                env[row][column] = i
-                if solve(env, row,column+1): return True, env
-                print(f'({row},{column}) => not {i}')
-                env[row][column] = -1
 
-        return False, env
+        # bread and butter
+        choices = valid_moves(env, (column,row))
+        for item in choices:
+            env[row][column] = item
+            boolean = bool(solve(env,row,column+1))
+            if boolean:
+                return solve(env, row,column+1)
+            #env[row][column] = -1
+        env[row][column] = -1
+        return
 
     else:
         return False, env
@@ -128,38 +120,16 @@ def solve(env, row, column):
 solution_map = gm.generate_map()
 solution_map = gm.set_voltorbs(solution_map, 0)
 
-#with open('test.map','wb') as f:
-#    pickle.dump(solution_map, f)
-with open('test.map','rb') as f:
-    solution_map = pickle.load(f)
+
 
 gm.printMap(solution_map,'solution')
 work_map = gm.make_work_copy(solution_map)
 
-#work_map[1][0]=solution_map[1][0]
-#print('work',work_map[1][0])
-#print('solution',solution_map[1][0])
-#gm.printMap(work_map)
+
 
 if s == 1:
     result, path = solve(work_map,0,0)
     print('Solved?',result)
     gm.printMap(path, 'path')
 
-
-# need to check columns
-if s == 0:
-    x,y = 0,0
-    '''for k1,v1 in enumerate(solution_map[:-1]):
-        work_map[k1][0] = solution_map[k1][0]
-        for k2, v2 in enumerate(v1[:-1]):
-            work_map[0][k2] = solution_map[0][k2]'''
-    gm.printMap(work_map, 'work map')
-
-
-    for i in range(0,4):
-        print(f'Is {i} valid at ({x},{y})?',is_valid_move(work_map,(0,0),i))
-
-#for n in range(0,4):
-#    print(f'({x},{y})->{n} is valid move?',isValidMove(work_map,(x,y),n))
 
