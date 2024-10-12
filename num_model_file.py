@@ -1,165 +1,184 @@
-from sklearn import datasets, metrics, svm
-from sklearn.datasets import make_classification
+from sklearn import svm, neighbors, linear_model
 from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
 import pickle
 from PIL import Image
 import numpy as np
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score
 import random
 import time
 import os
 import cv2
-import pandas as pd
+import shutil
+import sys
 
-# TODO MAKE OWN DATASET FOR NUMS
+s = 1
 
+
+def color_removal(img):
+    pixels = list(img.getdata())
+    modified_pixels = [pixel for pixel in pixels if pixel != (188,140,133)]
+
+    temp = Image.new('RGB', img.size)
+    temp.putdata(modified_pixels)
+
+    return temp
+
+
+def x_preprocess_image(image):
+    #if type(image) != type(PIL.Image.Image):
+    #    print(f'Image isn\'t PIL image')
+    #    return
+    width, height = image.size
+    left = width / 8
+    top = height / 8
+    right = width * 7 / 8 - 5
+    bottom = height * 7 / 8
+    image = image.crop((left, top, right, bottom))
+
+    return color_removal(image)
+
+def migrate_dataset(dataset_path, new_path):
+    if os.path.exists(new_path):
+        print('Destination already exists. Deleting path.')
+        shutil.rmtree('.\\work_dataset')
+    shutil.copytree(dataset_path, new_path)
 
 def preprocess_image(image_path):
     # Load the image from the file
-    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    img = cv2.imread(image_path)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # Resize it to 8x8 pixels (same as the MNIST digits dataset)
-    img_resized = cv2.resize(img, (8, 8))
+    #img_resized = cv2.resize(img, (8, 8))
 
     # Invert the image (so the background is black and digits are white)
-    img_resized = cv2.bitwise_not(img_resized)
-
-    # Scale pixel values to match the range of the MNIST dataset (0-16 instead of 0-255)
-    img_resized = img_resized // 16
+    #img_resized = cv2.bitwise_not(img_resized)
 
     # Flatten the image to a 1D vector
-    img_flattened = img_resized.flatten().reshape(1, -1)
+    #img_flattened = img.flatten().reshape(-1, 1)
+    print(image_path[:16])
+    print(img.shape)
 
-    return img_flattened
+    return img
 
-def get_dir_list(blacklist=[]):
-    directories = os.listdir('.\\dataset')
+def rotate_images(datafield_path,num_of_additions=20,angle_range=(10,30)):
+    for file in os.listdir(f'{datafield_path}'):
+        temp = Image.open(f'{datafield_path}\\{file}')
+        for i in range(0, num_of_additions):
+            t = temp.rotate(random.randint(angle_range[0], angle_range[1]) * random.choice([-1, 1]), expand=1)
+            t.save(f'{datafield_path}\\{i}-{file}')
 
-    # uncomment if needed
-    for item in blacklist:
-        directories.remove(item)
-
-    return directories
-
-def rotate_images(dir_list):
-    for dir in dir_list:
-        for file in os.listdir(f'.\\dataset\\{dir}'):
-            temp = Image.open(f'.\\dataset\\{dir}\\{file}')
-            for i in range(0, 20):
-                t = temp.rotate(random.randint(10, 30) * random.choice([-1, 1]), expand=1)
-                t.save(f'.\\dataset\\{dir}\\{i * 1000}{file}')
-
-def fix_folder_name(dir_list):
+def fix_folder_names(datafield_path):
     # giving temp name
-    for dir in dir_list:
-        for key, file in enumerate(os.listdir(f'.\\dataset\\{dir}')):
-            os.rename(f'.\\dataset\\{dir}\\{file}', f'.\\dataset\\{dir}\\X-{file}')
+    for key, file in enumerate(os.listdir(f'{datafield_path}')):
+        os.rename(f'{datafield_path}\\{file}', f'{datafield_path}\\Y-{file}')
 
     # renaming in easier order
-    for dir in dir_list:
-        for key, file in enumerate(os.listdir(f'.\\dataset\\{dir}')):
-            os.rename(f'.\\dataset\\{dir}\\{file}', f'.\\dataset\\{dir}\\{key + 1}.png')
+    for key, file in enumerate(os.listdir(f'{datafield_path}')):
+        os.rename(f'{datafield_path}\\{file}', f'{datafield_path}\\{key + 1}.array')
 
-def remove_pngs(dir_list):
-    for dir in dir_list:
-        for file in os.listdir(f'.\\dataset\\{dir}'):
-            if (file.split('.')[-1]) == 'png':
-                os.remove(f'.\\dataset\\{dir}\\{file}')
+def remove_pngs(datafield_path):
+    for file in os.listdir(f'{datafield_path}'):
+        if (file.split('.')[-1]) == 'png':
+            os.remove(f'{datafield_path}\\{file}')
 
-def preprocess_dataset(dir_list):
+def preprocess_datafield(datafield_path):
     # turning into arrays
-    for dir in dir_list:
-        for key, file in enumerate(os.listdir(f'.\\dataset\\{dir}')):
-            temp = preprocess_image(f'.\\dataset\\{dir}\\{file}')
-            with open(f'.\\dataset\\{dir}\\{key + 1}.array', 'wb') as f:
-                pickle.dump(temp, f)
+    for key, file in enumerate(os.listdir(f'{datafield_path}')):
+        temp = preprocess_image(f'{datafield_path}\\{file}')
+        with open(f'{datafield_path}\\{file.split('.')[0]}.array', 'wb') as f:
+            pickle.dump(temp, f)
 
-def process_dataset(whitelist=[],blacklist=[]):
-    directories = whitelist
-    if blacklist:
-        directories = get_dir_list(blacklist)
 
-    start = time.time()
-    #rotate_images(directories)
-    #print('Images rotated')
-
-    #fix_folder_name(directories)
-    #print('Folders renamed')
-
-    preprocess_dataset(directories)
-    print('Images processed')
-
-    remove_pngs(directories)
-    print('PNGs removed')
-
-    end = time.time()
-    print(f'Time taketh: {end-start}')
-
-def string_to_num(string):
-    map = {'empty':-2,
-           'voltorbs':-1,
-           'zero':0,
-           'one':1,
-           'two':2,
-           'three':3,
-           'four':4,
-           'five':5,
-           'six':6,
-           'seven':7,
-           'eight':8,
-           'nine':9
-           }
-    return map[string]
-
-def ds_labels_sample_split(dir_list):
+def ds_labels_sample_split(dataset_path,dir_list=[]):
+    if not dir_list:
+        dir_list = os.listdir(dataset_path)
     samples = []
     labels = []
     for dir in dir_list:
-        for key,file in enumerate(os.listdir(f'.\\dataset\\{dir}')):
-            labels.append(string_to_num(dir))
-            with open(f'.\\dataset\\{dir}\\{file}', 'rb') as f:
-                samples.append(pickle.load(f)[0])
+        for key,file in enumerate(os.listdir(f'{dataset_path}\\{dir}')):
+            labels.append(dir)
+            with open(f'{dataset_path}\\{dir}\\{file}', 'rb') as f:
+                samples.append(pickle.load(f)[0].flatten().flatten())
 
 
-    return samples,labels
+    return samples, labels
 
+def train_model(model_data={},dataset_data={}):
+    if not model_data:
+        print('Add model data')
+        print('model_data = {')
+        print('\tmodel_name=str,')
+        print('\tcurrent_name=str,')
+        print('\tdesired_accuracy=int,')
+        print('\tmodel=model_class')
+        print('}')
+        return
+    if not dataset_data:
+        print('Add dataset data')
+        print('dataset_data = {')
+        print('\tdataset_path=str,')
+        print('\tdir_list=list,')
+        print('\ttest_size=float<1')
+        print('}')
+        return
 
-desired_accuracy = 0.97  # You can adjust this value
-current_accuracy = 0.0
-best_accuracy = 0.0
-X, Y = ds_labels_sample_split(get_dir_list())
+    clf = model_data['model']
+    start = time.time()
+    current_accuracy = 0.0
+    best_accuracy = 0.0
+    X, Y = ds_labels_sample_split(dataset_data['dataset_path'], dir_list=dataset_data['dir_list'])
 
-# Iterate until the desired accuracy is achieved
-start = time.time()
-current_time = 0
+    while current_accuracy < model_data['desired_accuracy']:
+        X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=dataset_data['test_size'])
 
+        clf.fit(X_train, y_train)
+        y_pred = clf.predict(X_test)
+        current_accuracy = f1_score(y_test, y_pred, average='micro')
 
-# TRY TRAINING AS
-# SIGMOID KERNEL
-# POLY KERNEL
+        if current_accuracy > best_accuracy:
+            best_accuracy = current_accuracy
+            with open('current_best.txt', 'w') as f:
+                f.write(str(best_accuracy))
+            with open(model_data['current_name'], 'wb') as f:
+                pickle.dump(clf, f)
 
-# 1 sec * (60 sec/1 min) * (60 min/1 hr)
-while current_accuracy < desired_accuracy:
-    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.35)
+        current_time = time.time()
+        print(f"{(current_time - start) // 60} minutes:\n  Current accuracy => {current_accuracy}")
 
-    clf = svm.SVC(gamma=0.001)
-    clf.fit(X_train, y_train)
-    y_pred = clf.predict(X_test)
-    current_accuracy = accuracy_score(y_test, y_pred)
+        if current_accuracy > model_data['desired_accuracy']:
+            print(f'New accuracy: {current_accuracy}')
+            with open(model_data['folder_path']+'\\'+model_data['model_name'], 'wb') as f:
+                pickle.dump(clf, f)
 
-    if current_accuracy > best_accuracy:
-        best_accuracy = current_accuracy
-        with open('current_best.txt', 'w') as f:
-            f.write(str(best_accuracy))
-        with open('current_best.model', 'wb') as f:
-            pickle.dump(clf, f)
+def append_datafields(src,dest):
+    for key, file in enumerate(os.listdir(f'{src}')):
+        os.rename(f'{src}\\{file}', f'{dest}\\xyz-{file}')
 
+# try decision trees next
+data_for_model = {
+    'folder_path': '.\\models',
+    'model_name': 'tiles.model',
+    'current_name': 'current_best.model',
+    'desired_accuracy': 0.98,
+    'model': svm.SVC(gamma=0.001)
+}
+data_for_dataset = {
+    'dataset_path': '.\\work_dataset',
+    'dir_list': [],
+    'test_size': 0.45
+}
 
-    current_time = time.time()
-    print(f"{(current_time-start)//60} minutes:\n  Current accuracy => {current_accuracy}")
+if __name__ == '__main__':
+    file_list = []
+    temp = None
+    for file in os.listdir(f'.\\comparison_pictures\\2'):
+        temp = np.array(Image.open(f'.\\comparison_pictures\\2\\{file}'))
+        file_list.append(temp.flatten())
 
-    if current_accuracy > desired_accuracy:
-        print(f'New accuracy: {current_accuracy}')
-        with open('tiles.model', 'wb') as f:
-            pickle.dump(clf, f)
+    bool_list = []
+    for key,sublist in enumerate(file_list[:-1]):
+        if list(file_list[key]) == list(file_list[key+1]): bool_list.append(True)
+        else: bool_list.append(False)
+    print(f'2:')
+    print(bool_list)
