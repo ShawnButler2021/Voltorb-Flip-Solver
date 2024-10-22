@@ -13,29 +13,10 @@ color_approval_list = (
     (11, 29, 49),  # dark blue
     (46, 32, 13)  # brown
 )
-color_removal_list = (
-    (191, 101, 221),  # purple
-    (69, 167, 70),  # green
-    (222, 112, 85),  # red
-    (55, 146, 245),  # blue
-    (230, 159, 67),  # yellow
-    (224, 112, 80),  # voltorb red
-    (224, 111, 79),
-    (64, 63, 65),  # voltorb grey
-    (66, 64, 63),
-    (64, 64, 64),
-    (255, 255, 255),  # voltorb white
-    (254, 253, 252)
-)
 
 def open_site(driver):
     driver.get('https://voltorbflip.brandon-stein.com/')
     time.sleep(2)
-
-def image_transformation(img, pixels=50):
-    # making image easier to work with
-    #data = cv2.resize(np.array(img), (16 * pixels, 9 * pixels))
-    return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGRA)
 
 def img_diff(img1,img2):
     img1 = img1.resize((100, 100))
@@ -90,31 +71,7 @@ def color_removal(img, rgb):
 
     return temp
 
-def list_of_colors_removal(img, list_of_rgbs):
-    pixels = list(img.getdata())
-    modified_pixels = [pixel for pixel in pixels if pixel not in list_of_rgbs ]
-
-    temp = Image.new('RGB', img.size)
-    temp.putdata(modified_pixels)
-
-    return temp
-
-
-def color_approval(img, rgb_list):
-    pixels = list(img.getdata())
-    modified_pixels = [(0,0,0) if tuple(pixel) in rgb_list else (255,255,255) for pixel in pixels]
-
-    temp = Image.new('RGB', img.size)
-    temp.putdata(modified_pixels)
-
-    return temp
-
-
-
 def preprocess_image(image, margin, rgb):
-    #if type(image) != type(PIL.Image.Image):
-    #    print(f'Image isn\'t PIL image')
-    #    return
     width, height = image.size
     left = width / 8 + margin
     top = height / 8 + margin
@@ -127,7 +84,6 @@ def preprocess_image(image, margin, rgb):
 def preprocess_label(image):
     pixels = list(image.getdata())
     modified_pixels = [(0,0,0) if pixel == (44,22,17) else pixel for pixel in pixels]
-    modified_pixels = [pixel for pixel in modified_pixels if pixel != (255,255,255)]
 
     temp = Image.new('RGB', image.size)
     temp.putdata(modified_pixels)
@@ -167,7 +123,11 @@ def syncing_tiles_to_matrix(img_env,work_env):
                 work_env[y][x] = -1
     return work_env
 
-def split_label(label):
+
+
+# label series
+'''
+def voltorb_split(label):
     # syncing labels to matrix
     width, height = label.size
     left = int(width / 2)
@@ -175,80 +135,64 @@ def split_label(label):
     top = int(height / 2)
     bottom = height
 
-    voltorb_count = label.crop((left, top, right, bottom))
-    voltorb_count = list_of_colors_removal(voltorb_count,color_removal_list)
-    
+    voltorb_count_img = label.crop((left, top, right, bottom))
+    voltorb_count_img = color_removal(voltorb_count_img,(209,232,224))
+    voltorb_count_img = color_removal(voltorb_count_img,(48,159,106))
+    voltorb_count_img = list_of_color_approval(voltorb_count_img, color_approval_list)
+    return voltorb_count_img
 
-    return voltorb_count
+def left_point_split(label):
+    left = int(width * 1 / 5)
+    right = int(width * 7 / 10)
+    top = 0
+    bottom = int(height / 2)
 
+    left_point_img = label.crop((left, top, right, bottom))
+    left_point_img = color_removal(left_point_img, (209, 232, 224))
+    left_point_img = color_removal(left_point_img, (48, 159, 106))
+    left_point_img = list_of_color_approval(left_point_img, color_approval_list)
+    return left_point_img
 
+def right_point_split(label):
+    left = int(width * 7 / 10)
+    right = width
+    top = 0
+    bottom = int(height / 2)
+
+    right_point_img = label.crop((left, top, right, bottom))
+    right_point_img = color_removal(right_point_img, (209, 232, 224))
+    right_point_img = color_removal(right_point_img, (48, 159, 106))
+    right_point_img = list_of_color_approval(right_point_img, color_approval_list)
+    right_point_img = color_removal(right_point_img, (0,0,0))
+    return right_point_img
+'''
 
 if __name__ == '__main__':
     with webdriver.Firefox() as firefox:
         open_site(firefox)
-        time.sleep(1)
+        time.sleep(6)
         image = pyg.screenshot()
         work_map = generate_map()
 
         starting_map = list(pyg.locate('map.png', image, confidence=0.7))
         boxes, img_map = mapping_site(starting_map)
 
+
         work_map = syncing_tiles_to_matrix(img_map,work_map)
 
-        # syncing labels to matrix
-        label = preprocess_label(img_map[-1][0])
-        label = color_approval(label, ((44, 22, 17),(38,20,44)))
-        width, height = label.size
-
-        #voltorb_count = split_label(label)
-
-
-
-
-        left = int(width * 1/5)
-        right = int(width * 3/5)
-        top = 0
-        bottom = int(height / 2)
-
-        point_count_left = color_approval(label.crop((left,top,right,bottom)), (44,22,17))
-
-        left = int(width * 3 / 5)
-        right = width
-        top = 0
-        bottom = int(height / 2)
-
-        #point_count_right = preprocess_label(color_approval(label.crop((left, top, right, bottom)), (44, 22, 17)))
-        '''
-        #label.show()
-        #preprocess_label(point_count_left).show()
-        #point_count_right.show()
-        #voltorb_count.show()
-        for y, row in enumerate(img_map[:-1]):
-            label = preprocess_label(row[-1])
-            #label = list_of_colors_removal(label, color_removal_list)
-            label.show()
-            voltorb_count = split_label(label)
-            voltorb_count.show()
-            # crop label (row[-1]) into 3 segments
-            # cast img_diff => string
-            # appropriately combine and apply labels
-        for x, label in enumerate(img_map[-1]):
-            pass
-            # crop labels into 3 segments
-            # cast img_diff => string
-            # appropriately combine and apply labels
 
 
 
 
 
 
-
-
+        #'''
         # marking map
+        image.show()
         for row in work_map:
             print(row)
-
+        #'''
+        '''
         image = image_transformation(image)
         cv2.rectangle(image, (starting_map[0],starting_map[1]), (starting_map[0]+starting_map[2],starting_map[1]+starting_map[3]), (0,0,255), 4)
         '''
@@ -259,3 +203,5 @@ if __name__ == '__main__':
         #cv2.imshow('',image)
         #cv2.waitKey(0)
         '''
+        #print(work_map)
+        #time.sleep(150)
