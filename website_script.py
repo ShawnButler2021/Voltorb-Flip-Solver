@@ -26,12 +26,8 @@ def img_diff(img1,img2):
 
     return abs(np.sum(diff))
 
-def mapping_site(map):
+def mapping_site(map, left_margin=15, top_margin=15, spacing=2):
     # mapping values
-    left_margin = 15
-    top_margin = 15
-    spacing = 2
-
     new_map_left = map[0] + left_margin
     new_map_top = map[1] + top_margin
 
