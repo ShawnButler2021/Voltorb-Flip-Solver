@@ -1,5 +1,6 @@
 import generate_map as gm
 import pickle
+import random
 
 verbose = False
 
@@ -86,6 +87,8 @@ def valid_moves(env,coordinate):
 
     return choice_list
 
+
+
 def solve(env, row, column):
     if row == len(env)-1:                         # solution found
         if verbose: print('solution found')
@@ -103,13 +106,13 @@ def solve(env, row, column):
         # bread and butter
         choices = valid_moves(env, (column,row))
         for item in choices:
-            env[row][column] = item
+            print(f'item choices',item)
+            env[row][column] = random.choice(choices)
             boolean = bool(solve(env,row,column+1))
             if boolean:
                 return solve(env, row,column+1)
             #env[row][column] = -1
         env[row][column] = -1
-        return
 
     else:
         return False, env
