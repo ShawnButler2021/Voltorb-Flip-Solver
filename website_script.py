@@ -6,13 +6,8 @@ import pyautogui as pyg
 import cv2
 import numpy as np
 
-color_approval_list = (
-    (44, 22, 17),  # dark red
-    (38, 20, 44),  # dark purple
-    (14, 33, 14),  # dark green
-    (11, 29, 49),  # dark blue
-    (46, 32, 13)  # brown
-)
+
+
 
 def open_site(driver):
     driver.get('https://voltorbflip.brandon-stein.com/')
@@ -123,49 +118,9 @@ def syncing_tiles_to_matrix(img_env,work_env):
                 work_env[y][x] = -1
     return work_env
 
-
-
 # label series
-'''
-def voltorb_split(label):
-    # syncing labels to matrix
-    width, height = label.size
-    left = int(width / 2)
-    right = width
-    top = int(height / 2)
-    bottom = height
 
-    voltorb_count_img = label.crop((left, top, right, bottom))
-    voltorb_count_img = color_removal(voltorb_count_img,(209,232,224))
-    voltorb_count_img = color_removal(voltorb_count_img,(48,159,106))
-    voltorb_count_img = list_of_color_approval(voltorb_count_img, color_approval_list)
-    return voltorb_count_img
 
-def left_point_split(label):
-    left = int(width * 1 / 5)
-    right = int(width * 7 / 10)
-    top = 0
-    bottom = int(height / 2)
-
-    left_point_img = label.crop((left, top, right, bottom))
-    left_point_img = color_removal(left_point_img, (209, 232, 224))
-    left_point_img = color_removal(left_point_img, (48, 159, 106))
-    left_point_img = list_of_color_approval(left_point_img, color_approval_list)
-    return left_point_img
-
-def right_point_split(label):
-    left = int(width * 7 / 10)
-    right = width
-    top = 0
-    bottom = int(height / 2)
-
-    right_point_img = label.crop((left, top, right, bottom))
-    right_point_img = color_removal(right_point_img, (209, 232, 224))
-    right_point_img = color_removal(right_point_img, (48, 159, 106))
-    right_point_img = list_of_color_approval(right_point_img, color_approval_list)
-    right_point_img = color_removal(right_point_img, (0,0,0))
-    return right_point_img
-'''
 
 if __name__ == '__main__':
     with webdriver.Firefox() as firefox:
@@ -177,31 +132,12 @@ if __name__ == '__main__':
         starting_map = list(pyg.locate('map.png', image, confidence=0.7))
         boxes, img_map = mapping_site(starting_map)
 
-
         work_map = syncing_tiles_to_matrix(img_map,work_map)
 
+        for item in img_map:
+            item.show()
 
-
-
-
-
-
-        #'''
         # marking map
         image.show()
         for row in work_map:
             print(row)
-        #'''
-        '''
-        image = image_transformation(image)
-        cv2.rectangle(image, (starting_map[0],starting_map[1]), (starting_map[0]+starting_map[2],starting_map[1]+starting_map[3]), (0,0,255), 4)
-        '''
-        '''
-        for c in boxes:
-            cv2.rectangle(image, (c[0],c[1]), (c[0]+column_width,c[1]+row_height), (0,255,255), 2)
-        #print(matrix_map)
-        #cv2.imshow('',image)
-        #cv2.waitKey(0)
-        '''
-        #print(work_map)
-        #time.sleep(150)
