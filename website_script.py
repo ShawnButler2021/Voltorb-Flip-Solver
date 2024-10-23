@@ -13,19 +13,6 @@ def open_site(driver):
     driver.get('https://voltorbflip.brandon-stein.com/')
     time.sleep(2)
 
-def img_diff(img1,img2):
-    img1 = img1.resize((100, 100))
-    img1 = list(np.array(img1).flatten())
-    img2 = img2.resize((100, 100))
-    img2 = list(np.array(img2).flatten())
-
-    img1.extend([0] * (len(img2) - len(img1)))
-    img1 = np.array(img1,dtype=np.uint8)
-    img2 = np.array(img2,dtype=np.uint8)
-    diff = cv2.subtract(img1, img2)
-
-    return abs(np.sum(diff))
-
 def mapping_site(map, left_margin=15, top_margin=15, spacing=2):
     # mapping values
     new_map_left = map[0] + left_margin
@@ -51,6 +38,29 @@ def mapping_site(map, left_margin=15, top_margin=15, spacing=2):
         tiles.append(img_row)
 
     return boxes, tiles
+
+def get_site(wait_time):
+    with webdriver.Firefox() as firefox:
+        open_site(firefox)
+        time.sleep(wait_time)
+        environment = pyg.screenshot()
+
+        starting_map = list(pyg.locate('map.png', environment, confidence=0.7))
+        bounding_boxes, map_of_images = mapping_site(starting_map)
+    return bounding_boxes, map_of_images, environment
+
+def img_diff(img1,img2):
+    img1 = img1.resize((100, 100))
+    img1 = list(np.array(img1).flatten())
+    img2 = img2.resize((100, 100))
+    img2 = list(np.array(img2).flatten())
+
+    img1.extend([0] * (len(img2) - len(img1)))
+    img1 = np.array(img1,dtype=np.uint8)
+    img2 = np.array(img2,dtype=np.uint8)
+    diff = cv2.subtract(img1, img2)
+
+    return abs(np.sum(diff))
 
 #https://www.tutorialspoint.com/python_pillow/python_pillow_change_color_by_changing_pixel_values.html
 def color_removal(img, rgb):
@@ -119,21 +129,15 @@ def syncing_tiles_to_matrix(img_env,work_env):
 
 
 if __name__ == '__main__':
-    with webdriver.Firefox() as firefox:
-        open_site(firefox)
-        time.sleep(6)
-        image = pyg.screenshot()
-        work_map = generate_map()
+    boxes, img_map, env = get_site(6)
 
-        starting_map = list(pyg.locate('map.png', image, confidence=0.7))
-        boxes, img_map = mapping_site(starting_map)
+    work_map = generate_map()
+    #work_map = syncing_tiles_to_matrix(img_map,work_map)
 
-        work_map = syncing_tiles_to_matrix(img_map,work_map)
+    #for item in img_map:
+    #    item.show()
 
-        for item in img_map:
-            item.show()
-
-        # marking map
-        image.show()
-        for row in work_map:
-            print(row)
+    # marking map
+    env.show()
+    for row in work_map:
+        print(row)
