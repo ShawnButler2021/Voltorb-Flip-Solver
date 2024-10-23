@@ -45,13 +45,20 @@ func _input(event: InputEvent) -> void:
 			rootNode = find_node(nodeCreationList, 0, 0)
 			#solve_Voltflip(size, rootNode, rootNode)
 			
-			make_sideHint(size);
+			#make_sideHint(size);
 			
-			print(get_row_VoltCount(size))
-			print(get_column_VoltCount(size))
-			print(""); 
-			print(get_column_sum(size))
-			print(get_row_sum(size))
+			#print(get_row_VoltCount(size))
+			#print(get_column_VoltCount(size))
+			#print(""); 
+			#print(get_column_sum(size))
+			#print(get_row_sum(size))
+			
+			set_sideHint(
+				[2, 1, 5, 5, 12],
+				[2, 1, 9, 6, 4],
+				[3, 4, 2, 3, 1],
+				[3, 1, 3, 3, 3],
+			)
 			
 			#connect_nodes(inputNode, null); 
 
@@ -134,6 +141,7 @@ func make_sideHint(size: int) -> void:
 	b.update_visual(size)
 	sideHintCreationList.append(b)
 	get_parent().add_child(b) 
+
 func get_column_sum(size: int) -> Array:
 	var selectedNode = rootNode; 
 	var selectedColumn = rootNode; 
@@ -290,4 +298,33 @@ func restart_game() -> void:
 	rootNode = find_node(nodeCreationList, 0, 0)
 	#solve_Voltflip(size, rootNode, rootNode)
 		
-	make_sideHint(size);
+	#make_sideHint(size);
+	
+	set_sideHint(
+	[2, 1, 5, 5, 12],
+	[2, 1, 9, 6, 4],
+	[3, 4, 2, 3, 1],
+	[3, 1, 3, 3, 3],
+	)
+
+func set_sideHint(rowVoltCounts:Array, colVoltCounts:Array, rowCoinCount:Array, colCoinCounts:Array) -> void: 
+	for i in sideHintCreationList:
+		i.queue_free()
+	sideHintCreationList = []
+	
+	for i in size:
+		var b = hintSpawn.instantiate()
+		b.global_position = Vector2((size) * 60,  i * 60); 
+		b.update_info(rowVoltCounts[i], rowCoinCount[i])
+		b.update_visual(i)
+		sideHintCreationList.append(b)
+		get_parent().add_child(b)
+		
+	for i in size:
+		var b = hintSpawn.instantiate()
+		b.global_position = Vector2(i * 60,  size * 60); 
+		b.update_visual(i)
+		b.update_info(colVoltCounts[i], colCoinCounts[i])
+		sideHintCreationList.append(b)
+		get_parent().add_child(b)
+		
