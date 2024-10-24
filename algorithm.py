@@ -106,7 +106,6 @@ def solve(env, row, column):
         # bread and butter
         choices = valid_moves(env, (column,row))
         for item in choices:
-            print(f'item choices',item)
             env[row][column] = random.choice(choices)
             boolean = bool(solve(env,row,column+1))
             if boolean:
