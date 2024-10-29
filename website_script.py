@@ -5,6 +5,10 @@ import time
 import pyautogui as pyg
 import cv2
 import numpy as np
+import pickle
+import matplotlib.pyplot as plt
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.image import img_to_array, load_img
 
 
 
@@ -45,6 +49,7 @@ def get_site(wait_time):
         time.sleep(wait_time)
         environment = pyg.screenshot()
 
+
         starting_map = list(pyg.locate('map.png', environment, confidence=0.7))
         bounding_boxes, map_of_images = mapping_site(starting_map)
     return bounding_boxes, map_of_images, environment
@@ -72,6 +77,15 @@ def color_removal(img, rgb):
 
     return temp
 
+def list_of_colors_approval(img, rgb_list):
+    pixels = list(img.getdata())
+    modified_pixels = [(255,255,255) if pixel not in rgb_list else (0,0,0) for pixel in pixels ]
+
+    temp = Image.new('RGB', img.size)
+    temp.putdata(modified_pixels)
+
+    return temp
+
 def preprocess_image(image, margin, rgb):
     width, height = image.size
     left = width / 8 + margin
@@ -82,13 +96,7 @@ def preprocess_image(image, margin, rgb):
 
     return color_removal(image, rgb)
 
-def preprocess_label(image):
-    pixels = list(image.getdata())
-    modified_pixels = [(0,0,0) if pixel == (44,22,17) else pixel for pixel in pixels]
 
-    temp = Image.new('RGB', image.size)
-    temp.putdata(modified_pixels)
-    return image
 
 def syncing_tiles_to_matrix(img_env,work_env):
     point_map = {
@@ -125,19 +133,86 @@ def syncing_tiles_to_matrix(img_env,work_env):
     return work_env
 
 # label series
+def get_labels(environment):
+    vertical_labels = [row[-1] for row in environment[:-1]]
+    horizontal_labels = [image for image in environment[-1]]
+
+    approval_list = (
+        (38,20,44), # purple
+        (46,32,13), # yellow
+        (14,33,14), # green
+        (44,22,17), # red
+        (11,29,49)  # blue
+    )
+
+    for index, image in enumerate(vertical_labels):
+        vertical_labels[index] = list_of_colors_approval(image,approval_list)
+
+    for index, image in enumerate(horizontal_labels):
+        horizontal_labels[index] = list_of_colors_approval(image, approval_list)
+
+    return vertical_labels, horizontal_labels
+
+def predict_label(model, image):
+    image_array = img_to_array(image.resize((30,30))) / 255.0
+    image_array = np.expand_dims(image_array, axis=0)
+
+    prediction = model.predict(image_array)
+    return np.argmax(prediction, axis=1)
+
+def split_vertical_label(label):
+    width, height = label.size
+
+    left = width // 2 - 10
+    right = width * 7 // 10
+    top = 0
+    bottom = height // 2 - 10
+    left_point = label.crop((left, top, right, bottom))
+
+
+    left = width * 7 // 10
+    right = width
+    top = 0
+    bottom = height // 2 - 10
+    right_point = label.crop((left, top, right, bottom))
+
+
+    left = width * 7 // 10
+    right = width
+    top = height // 2 - 10
+    bottom = height - 10
+    voltorb = label.crop((left, top, right, bottom))
+
+
+    return left_point, right_point, voltorb
 
 
 
 if __name__ == '__main__':
-    boxes, img_map, env = get_site(6)
+    boxes, img_map, env = get_site(15)
+    env.show('Map')
+    digits_model = load_model('digits.keras')
 
     work_map = generate_map()
     #work_map = syncing_tiles_to_matrix(img_map,work_map)
 
-    #for item in img_map:
-    #    item.show()
+    v_labels, h_labels = get_labels(img_map)
+
+    for y, label in enumerate(v_labels):
+        left, right, voltorb = split_vertical_label(label)
+        left = str(predict_label(digits_model, left)[0])
+        right = str(predict_label(digits_model, right)[0])
+        points = int(left+right)
+        voltorbs = int(predict_label(digits_model, voltorb)[0])
+
+        work_map[y][-1] = (voltorbs, points)
+
+
+
+    
 
     # marking map
-    env.show()
+    #env.show()
     for row in work_map:
         print(row)
+    
