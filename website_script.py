@@ -1,55 +1,24 @@
 from selenium import webdriver
 from generate_map import generate_map
-from PIL import Image, ImageOps
+from PIL import Image
 import time
 import pyautogui as pyg
 import cv2
 import numpy as np
-import sys
-from sklearn import svm
 import pickle
+import matplotlib.pyplot as plt
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.image import img_to_array, load_img
+
+
+
 
 def open_site(driver):
     driver.get('https://voltorbflip.brandon-stein.com/')
     time.sleep(2)
 
-def image_transformation(img, pixels=50):
-    # making image easier to work with
-    #data = cv2.resize(np.array(img), (16 * pixels, 9 * pixels))
-    return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGRA)
-
-def array_diff(img1, img2):
-    img1 = img1.resize((100,100))
-    img1 = list(np.array(img1).flatten())
-    img2 = img2.resize((100,100))
-    img2 = np.array(img2).flatten()
-
-    img1.extend([0] * (len(img2)-len(img1)))
-    img1 = np.array(img1)
-
-    diff = img1 - img2
-
-    return abs(np.sum(diff))
-
-def img_diff(img1,img2):
-    img1 = img1.resize((100, 100))
-    img1 = list(np.array(img1).flatten())
-    img2 = img2.resize((100, 100))
-    img2 = list(np.array(img2).flatten())
-
-    img1.extend([0] * (len(img2) - len(img1)))
-    img1 = np.array(img1,dtype=np.uint8)
-    img2 = np.array(img2,dtype=np.uint8)
-    diff = cv2.subtract(img1, img2)
-
-    return abs(np.sum(diff))
-
-def mapping_site():
+def mapping_site(map, left_margin=15, top_margin=15, spacing=2):
     # mapping values
-    left_margin = 15
-    top_margin = 15
-    spacing = 2
-
     new_map_left = map[0] + left_margin
     new_map_top = map[1] + top_margin
 
@@ -74,65 +43,176 @@ def mapping_site():
 
     return boxes, tiles
 
-def is_value(x,y,needle,haystack,conf=0.4):
-    try:
-        pyg.locate(needle, haystack, confidence=conf)
-        return True
-    except pyg.ImageNotFoundException:
-        return False
+def get_site(wait_time):
+    with webdriver.Firefox() as firefox:
+        open_site(firefox)
+        time.sleep(wait_time)
+        environment = pyg.screenshot()
 
-def preprocess_image(image):
-    # Load the image from the file
-    #img = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
-    img = np.array(ImageOps.grayscale(image))
 
-    # Resize it to 8x8 pixels (same as the MNIST digits dataset)
-    img_resized = cv2.resize(img, (8, 8))
+        starting_map = list(pyg.locate('map.png', environment, confidence=0.7))
+        bounding_boxes, map_of_images = mapping_site(starting_map)
+    return bounding_boxes, map_of_images, environment
 
-    # Invert the image (so the background is black and digits are white)
-    img_resized = cv2.bitwise_not(img_resized)
+def img_diff(img1,img2):
+    img1 = img1.resize((100, 100))
+    img1 = list(np.array(img1).flatten())
+    img2 = img2.resize((100, 100))
+    img2 = list(np.array(img2).flatten())
 
-    # Scale pixel values to match the range of the MNIST dataset (0-16 instead of 0-255)
-    img_resized = img_resized // 16
+    img1.extend([0] * (len(img2) - len(img1)))
+    img1 = np.array(img1,dtype=np.uint8)
+    img2 = np.array(img2,dtype=np.uint8)
+    diff = cv2.subtract(img1, img2)
 
-    # Flatten the image to a 1D vector
-    img_flattened = img_resized.flatten().reshape(1, -1)
+    return abs(np.sum(diff))
 
-    return img_flattened
+#https://www.tutorialspoint.com/python_pillow/python_pillow_change_color_by_changing_pixel_values.html
+def color_removal(img, rgb):
+    pixels = list(img.getdata())
+    modified_pixels = [pixel for pixel in pixels if pixel != rgb]
+
+    temp = Image.new('RGB', img.size)
+    temp.putdata(modified_pixels)
+
+    return temp
+
+def list_of_colors_approval(img, rgb_list):
+    pixels = list(img.getdata())
+    modified_pixels = [(255,255,255) if pixel not in rgb_list else (0,0,0) for pixel in pixels ]
+
+    temp = Image.new('RGB', img.size)
+    temp.putdata(modified_pixels)
+
+    return temp
+
+def preprocess_image(image, margin, rgb):
+    width, height = image.size
+    left = width / 8 + margin
+    top = height / 8 + margin
+    right = width * 7 / 8 - margin
+    bottom = height * 7 / 8 - margin
+    image = image.crop((left, top, right, bottom))
+
+    return color_removal(image, rgb)
+
+
+
+def syncing_tiles_to_matrix(img_env,work_env):
+    point_map = {
+        1: Image.open(f'.\\comparison_pictures\\1.png'),
+        2: Image.open(f'.\\comparison_pictures\\2.png'),
+        3: Image.open(f'.\\comparison_pictures\\3.png'),
+        0: Image.open(f'.\\comparison_pictures\\0.png')
+    }
+    temp_dict = {
+        0: None,
+        1: None,
+        2: None,
+        3: None,
+
+    }
+    for y, row in enumerate(img_env[:-1]):
+        for x, tile in enumerate(row[:-1]):
+            tile = preprocess_image(tile, 5, (188,140,133))
+
+            temp_dict[0] = img_diff(tile, point_map[0])
+            temp_dict[1] = img_diff(tile, point_map[1])
+            temp_dict[2] = img_diff(tile, point_map[2])
+            temp_dict[3] = img_diff(tile, point_map[3])
+            if temp_dict[0] < 1000:
+                work_env[y][x] = 0
+            elif temp_dict[1] < 1000:
+                work_env[y][x] = 1
+            elif temp_dict[2] < 1000:
+                work_env[y][x] = 2
+            elif temp_dict[3] < 1000:
+                work_env[y][x] = 3
+            else:
+                work_env[y][x] = -1
+    return work_env
+
+# label series
+def get_labels(environment):
+    vertical_labels = [row[-1] for row in environment[:-1]]
+    horizontal_labels = [image for image in environment[-1]]
+
+    approval_list = (
+        (38,20,44), # purple
+        (46,32,13), # yellow
+        (14,33,14), # green
+        (44,22,17), # red
+        (11,29,49)  # blue
+    )
+
+    for index, image in enumerate(vertical_labels):
+        vertical_labels[index] = list_of_colors_approval(image,approval_list)
+
+    for index, image in enumerate(horizontal_labels):
+        horizontal_labels[index] = list_of_colors_approval(image, approval_list)
+
+    return vertical_labels, horizontal_labels
+
+def predict_label(model, image):
+    image_array = img_to_array(image.resize((30,30))) / 255.0
+    image_array = np.expand_dims(image_array, axis=0)
+
+    prediction = model.predict(image_array)
+    return np.argmax(prediction, axis=1)
+
+def split_vertical_label(label):
+    width, height = label.size
+
+    left = width // 2 - 10
+    right = width * 7 // 10
+    top = 0
+    bottom = height // 2 - 10
+    left_point = label.crop((left, top, right, bottom))
+
+
+    left = width * 7 // 10
+    right = width
+    top = 0
+    bottom = height // 2 - 10
+    right_point = label.crop((left, top, right, bottom))
+
+
+    left = width * 7 // 10
+    right = width
+    top = height // 2 - 10
+    bottom = height - 10
+    voltorb = label.crop((left, top, right, bottom))
+
+
+    return left_point, right_point, voltorb
+
 
 
 if __name__ == '__main__':
-    with webdriver.Firefox() as firefox:
-        open_site(firefox)
-        time.sleep(6)
-        image = pyg.screenshot()
-        work_map = generate_map()
+    boxes, img_map, env = get_site(15)
+    env.show('Map')
+    digits_model = load_model('digits.keras')
 
-        map = list(pyg.locate('comparison-pictures\\map.png', image, confidence=0.7))
-        #print('(left,top,width,height)', map)
+    work_map = generate_map()
+    #work_map = syncing_tiles_to_matrix(img_map,work_map)
 
-        boxes, img_map = mapping_site()
+    v_labels, h_labels = get_labels(img_map)
 
+    for y, label in enumerate(v_labels):
+        left, right, voltorb = split_vertical_label(label)
+        left = str(predict_label(digits_model, left)[0])
+        right = str(predict_label(digits_model, right)[0])
+        points = int(left+right)
+        voltorbs = int(predict_label(digits_model, voltorb)[0])
 
-        # TODO train svm to get numbers
-        tile_clf = None
-        with open('tiles.model','rb') as f:
-            tile_clf = pickle.load(f)
-
-        print(type(tile_clf))
-        for y, row in enumerate(img_map):
-            for x, tile in enumerate(row):
-                print(f'{x},{y} =>',tile_clf.predict(preprocess_image(tile)))
+        work_map[y][-1] = (voltorbs, points)
 
 
-        # marking map
-        for row in work_map:
-            print(row)
 
-        image = image_transformation(image)
-        cv2.rectangle(image, (map[0],map[1]), (map[0]+map[2],map[1]+map[3]), (0,0,255), 4)
-        '''for c in boxes:
-            cv2.rectangle(image, (c[0],c[1]), (c[0]+column_width,c[1]+row_height), (0,255,255), 2)'''
-        #print(matrix_map)
-        cv2.imshow('',image)
-        cv2.waitKey(0)
+    
+
+    # marking map
+    #env.show()
+    for row in work_map:
+        print(row)
+    
