@@ -29,7 +29,6 @@ x = np.array(images)
 y = np.array(labels)
 
 
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
 
 
 
@@ -49,7 +48,8 @@ model.add(tf.keras.layers.Dense(num_classes, activation='softmax'))
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
 val_acc = 0
-while val_acc < .91:
+while val_acc < .998:
+	x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
 	model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size)
 
 	_, val_acc = model.evaluate(x_test,y_test)

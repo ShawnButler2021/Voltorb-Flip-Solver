@@ -110,8 +110,8 @@ def solve(env, row, column):
             boolean = bool(solve(env,row,column+1))
             if boolean:
                 return solve(env, row,column+1)
-            #env[row][column] = -1
         env[row][column] = -1
+        return False,env
 
     else:
         return False, env
