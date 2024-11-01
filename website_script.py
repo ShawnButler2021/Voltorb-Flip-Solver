@@ -45,14 +45,13 @@ def mapping_site(map, left_margin=15, top_margin=15, spacing=2):
     temp_box = []
     temp_row = []
     index = 0
-    for item in boxes:
-        if index < 5: temp_row.append(item)
-        index += 1
-
-        if index > 5: 
-            index = 0
+    for index, item in enumerate(boxes):
+        if index % 6 == 0 and index != 0: 
             temp_box.append(temp_row)
+            temp_row = []
+        temp_row.append(item)
 
+    boxes = temp_box
 
     return boxes, tiles
 
@@ -265,14 +264,23 @@ if __name__ == '__main__':
         time.sleep(1)
         boxes, img_map, env = get_map()
 
+    v_labels, h_labels = get_labels(img_map)
 
-    env.show('Map')
-    digits_model = load_model('digits.keras')
+    for x, label in enumerate(h_labels):
+        left, right, voltorb = split_horizontal_label(label)
+        left.show()
+        right.show()
+        #voltorb.show()
 
-    w_map = copy_map(img_map, digits_model)
+
+    #digits_model = load_model('digits.keras')
+
+
+
+    #w_map = copy_map(img_map, digits_model)
 
     # marking map
     #env.show()
-    for row in w_map:
-        print(row)
+    #for row in w_map:
+    #    print(row)
     

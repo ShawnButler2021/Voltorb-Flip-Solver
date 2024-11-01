@@ -15,6 +15,7 @@ def web_loop():
     dm = load_model('digits.keras')
     
 
+    visited = []
     while True:
         boxes, img_map, env = ws.get_map()
 
@@ -30,15 +31,35 @@ def web_loop():
         for y, row in enumerate(w_map[:-1]):
             for x, tile in enumerate(row[:-1]):
                 if tile == 2 or tile == 3: possible_tiles.append((x,y))
+        print('Possible tiles to click:', possible_tiles)
+        
 
-        try:
+        #gm.printMap(w_map,'work')
+        if possible_tiles:
             map_choice = random.choice(possible_tiles)
-            x = boxes[y][x][0] + boxes[y][x][2] // 2
-            y = boxes[y][x][1] + boxes[y][x][3] // 2
-            pyg.click(x=x,y=y)
+        
+            if map_choice in visited:
+                map_choice = (random.randint(0,4), random.randint(0,4))
+
+        else: map_choice = (random.randint(0,4), random.randint(0,4))
+
+        x, y = map_choice
+        try:
+            box = boxes[y][x]
         except IndexError:
-            print('No solution found')
-            break
+            box = boxes[random.randint(0,4)][random.randint(0,4)]
+
+        for row in boxes:
+            print(row)
+
+
+        x = box[0] + box[2] // 2
+        y = box[1] + box[3] // 2
+            
+
+
+        pyg.click(x=x,y=y)
+        visited.append(map_choice)
 
     firefox.close()
 
