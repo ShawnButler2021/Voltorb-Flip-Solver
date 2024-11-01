@@ -9,6 +9,7 @@ import pickle
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array, load_img
+import random
 
 
 
@@ -37,21 +38,28 @@ def mapping_site(map, left_margin=15, top_margin=15, spacing=2):
             if column == 5 and row == 5: break
             x = int(new_map_left + row * column_width + row * spacing)
             y = int(new_map_top + column * row_height + column * spacing)
-            boxes.append((x, y))
+            boxes.append((x, y, column_width, row_height))
             img_row.append(pyg.screenshot(region=(x, y, column_width, row_height)))
         tiles.append(img_row)
 
+    temp_box = []
+    temp_row = []
+    index = 0
+    for index, item in enumerate(boxes):
+        if index % 6 == 0 and index != 0: 
+            temp_box.append(temp_row)
+            temp_row = []
+        temp_row.append(item)
+
+    boxes = temp_box
+
     return boxes, tiles
 
-def get_site(wait_time):
-    with webdriver.Firefox() as firefox:
-        open_site(firefox)
-        time.sleep(wait_time)
-        environment = pyg.screenshot()
+def get_map():
+    environment = pyg.screenshot()
+    starting_map = list(pyg.locate('map.png', environment, confidence=0.7))
+    bounding_boxes, map_of_images = mapping_site(starting_map)
 
-
-        starting_map = list(pyg.locate('map.png', environment, confidence=0.7))
-        bounding_boxes, map_of_images = mapping_site(starting_map)
     return bounding_boxes, map_of_images, environment
 
 def img_diff(img1,img2):
@@ -95,8 +103,6 @@ def preprocess_image(image, margin, rgb):
     image = image.crop((left, top, right, bottom))
 
     return color_removal(image, rgb)
-
-
 
 def syncing_tiles_to_matrix(img_env,work_env):
     point_map = {
@@ -186,33 +192,95 @@ def split_vertical_label(label):
 
     return left_point, right_point, voltorb
 
+def split_horizontal_label(label):
+    width, height = label.size
 
+    left = width * 3 // 10
+    right = width * 6 // 10
+    top = 0
+    bottom = height // 2
+    left_point = label.crop((left, top, right, bottom))
+
+
+    left = width * 6 // 10
+    right = width
+    top = 0
+    bottom = height // 2
+    right_point = label.crop((left, top, right, bottom))
+
+
+    left = width // 2
+    right = width
+    top = height // 2
+    bottom = height
+    voltorb = label.crop((left, top, right, bottom))
+
+
+    return left_point, right_point, voltorb
+
+def copy_map(map, model):
+    work_map = generate_map()
+    work_map = syncing_tiles_to_matrix(map,work_map)
+
+    v_labels, h_labels = get_labels(map)
+
+    # adding labels to the workmap
+    for x, label in enumerate(h_labels):
+        left, right, voltorb = split_horizontal_label(label)
+
+        
+        left = str(predict_label(model, left)[0])
+        if left != '1' or left != '0':      # heuristic for handling false positives
+            left = random.choices(['0','1'], weights=[7,3])[0]
+
+        right = str(predict_label(model, right)[0])
+        points = int(left+right)
+        if points > 12:         # heuristic for handling false positives
+            points -= 10
+
+        voltorb = int(predict_label(model, voltorb)[0])
+        if voltorb not in [0,1,2,3,4,5]:    # heuristic for handling false positives
+            print(x,voltorb)
+            voltorb = random.choices([0,1,2,3,4,5], weights=[1,1,2,3,2,1])[0]
+
+        work_map[-1][x] = (voltorb, points)
+
+    
+    for y, label in enumerate(v_labels):
+        left, right, voltorb = split_vertical_label(label)
+        left = str(predict_label(model, left)[0])
+        right = str(predict_label(model, right)[0])
+        points = int(left+right)
+        voltorb = int(predict_label(model, voltorb)[0])
+
+        work_map[y][-1] = (voltorb, points)
+
+    return work_map
 
 if __name__ == '__main__':
-    boxes, img_map, env = get_site(15)
-    env.show('Map')
-    digits_model = load_model('digits.keras')
-
-    work_map = generate_map()
-    #work_map = syncing_tiles_to_matrix(img_map,work_map)
+    boxes, img_map, env = None, None, None
+    with webdriver.Firefox() as firefox:
+        open_site(firefox)
+        time.sleep(1)
+        boxes, img_map, env = get_map()
 
     v_labels, h_labels = get_labels(img_map)
 
-    for y, label in enumerate(v_labels):
-        left, right, voltorb = split_vertical_label(label)
-        left = str(predict_label(digits_model, left)[0])
-        right = str(predict_label(digits_model, right)[0])
-        points = int(left+right)
-        voltorbs = int(predict_label(digits_model, voltorb)[0])
-
-        work_map[y][-1] = (voltorbs, points)
+    for x, label in enumerate(h_labels):
+        left, right, voltorb = split_horizontal_label(label)
+        left.show()
+        right.show()
+        #voltorb.show()
 
 
+    #digits_model = load_model('digits.keras')
 
-    
+
+
+    #w_map = copy_map(img_map, digits_model)
 
     # marking map
     #env.show()
-    for row in work_map:
-        print(row)
+    #for row in w_map:
+    #    print(row)
     
