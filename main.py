@@ -6,7 +6,7 @@ from selenium import webdriver
 from tensorflow.keras.models import load_model
 import pyautogui as pyg
 import random
-
+import sys
 
 
 def web_loop():
@@ -82,4 +82,9 @@ def commandline_run():
 
 
 if __name__ == '__main__':
-    web_loop()
+    try:
+        if sys.argv[1] == 'web': web_loop()
+        elif sys.argv[1] == 'cli': commandline_run()
+    except IndexError:
+        print('Add web or cli as the second argument of your call.')
+        print('Example: python main.py web')
