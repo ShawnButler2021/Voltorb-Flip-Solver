@@ -72,7 +72,11 @@ def commandline_run():
     result, work_space = alg.solve(work_space,0,0)
     valid_path = False
 
-    if result: valid_path = True
+    while not result:
+        result, work_space = alg.solve(work_space,0,0)
+    valid_path = True
+
+
     gm.printMap(solution, 'Solution')
     gm.printMap(work_space, 'Valid Path Found')
 
